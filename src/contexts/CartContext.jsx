@@ -1,28 +1,38 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useState, useContext, useEffect } from "react";
 
-const CartContext = createContext()
+const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([])
+  const [cart, setCart] = useState(
+    JSON.parse(localStorage.getItem("cart")) || []
+  );
 
-  const addToCart = (product, quantity = 1) => {
-    setCartItems(prev => [...prev, { product, quantity }])
-  }
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
 
-  const clearCart = () => setCartItems([])
+  const addToCart = (product) => {
+    setCart((prev) => {
+      const exist = prev.find((p) => p.id === product.id);
+      if (exist) {
+        return prev.map((p) =>
+          p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
 
-  // 👇 Nueva función para contar items en el carrito
-  const getCartItemCount = () => {
-    return cartItems.reduce((total, item) => total + item.quantity, 0)
-  }
+  const removeFromCart = (id) =>
+    setCart((prev) => prev.filter((p) => p.id !== id));
+
+  const clearCart = () => setCart([]);
 
   return (
-    <CartContext.Provider
-      value={{ cartItems, addToCart, clearCart, getCartItemCount }}
-    >
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
       {children}
     </CartContext.Provider>
-  )
-}
+  );
+};
 
-export const useCart = () => useContext(CartContext)
+export const useCart = () => useContext(CartContext);
